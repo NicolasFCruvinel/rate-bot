@@ -1,0 +1,19 @@
+# Arquivos de ambiente
+.env
+.env.local
+
+# Arquivos de dados
+alertas.json
+
+# Arquivos Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Arquivos temporários
+descobrir_chat_id.py
+
+# Logs
+*.log
