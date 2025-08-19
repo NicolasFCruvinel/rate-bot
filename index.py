@@ -363,8 +363,16 @@ def main():
     ]
     
     async def configurar_comandos(app):
-        await app.bot.set_my_commands(comandos)
-        logging.info("Menu de comandos configurado no Telegram")
+        try:
+            # Remove webhooks que podem estar ativos
+            await app.bot.delete_webhook(drop_pending_updates=True)
+            logging.info("Webhooks removidos")
+            
+            # Configura os comandos do menu
+            await app.bot.set_my_commands(comandos)
+            logging.info("Menu de comandos configurado no Telegram")
+        except Exception as e:
+            logging.error(f"Erro ao configurar comandos: {e}")
     
     # Configura os comandos após inicializar
     application.post_init = configurar_comandos
@@ -373,10 +381,32 @@ def main():
     job_queue = application.job_queue
     job_queue.run_repeating(notificar_mudanca, interval=1800, first=10)  # 1800s = 30min
 
-    # Inicia o bot
+    # Inicia o bot com tratamento de erro
     logging.info("🤖 Bot de Cotação USD-BRL iniciado!")
     logging.info(f"📊 {len(alertas_ativos)} alertas carregados")
-    application.run_polling()
+    
+    try:
+        application.run_polling(
+            drop_pending_updates=True,  # Remove updates pendentes
+            timeout=60,  # Timeout para requests
+            poll_interval=2  # Intervalo entre polls
+        )
+    except Exception as e:
+        logging.error(f"Erro ao executar o bot: {e}")
+        # Tenta reiniciar após erro
+        import time
+        time.sleep(5)
+        main()
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        logging.info("Bot interrompido pelo usuário")
+    except Exception as e:
+        logging.error(f"Erro crítico: {e}")
+        # Em caso de erro crítico, espera um pouco antes de tentar novamente
+        import time
+        time.sleep(10)
+        logging.info("Tentando reiniciar...")
+        main()
